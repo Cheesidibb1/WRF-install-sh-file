@@ -23,8 +23,8 @@ sudo apt install -y libtool automake autoconf make m4 default-jre default-jdk cs
 # Make required directories
 
 export HOME=`cd; pwd`
-mkdir -p $HOME/Models/WRF_TUTORIAL
-export WRF_HOME=$HOME/Models/WRF_TUTORIAL
+mkdir -p $HOME/Models/WRF
+export WRF_HOME=$HOME/Models/WRF
 cd $WRF_HOME
 mkdir -p Downloads Libs Libs/grib2 Libs/NETCDF Libs/MPICH
 export DIR=$WRF_HOME/Libs
