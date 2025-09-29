@@ -70,11 +70,11 @@ tar -xzvf netcdf-c-4.9.0.tar.gz
 cd netcdf-c-4.9.0
 export CPPFLAGS=-I$DIR/grib2/include
 export LDFLAGS=-L$DIR/grib2/lib
-./configure --prefix=$DIR/NETCDF --disable-dap
+./configure --prefix=$DIR/netcdf-c-4.9.0 --disable-dap
 make
 make install
-export PATH=$DIR/NETCDF/bin:$PATH
-export NETCDF=$DIR/NETCDF
+export PATH=$DIR/netcdf-c-4.9.0/bin:$PATH
+export NETCDF=$DIR/netcdf-c-4.9.0
 
 #***********************************************************************************************************************************************
 
@@ -84,10 +84,10 @@ cd $WRF_HOME/Downloads
 wget -c https://downloads.unidata.ucar.edu/netcdf-fortran/4.6.0/netcdf-fortran-4.6.0.tar.gz
 tar -xvzf netcdf-fortran-4.6.0.tar.gz
 cd netcdf-fortran-4.6.0
-export LD_LIBRARY_PATH=$DIR/NETCDF/lib:$LD_LIBRARY_PATH
-export CPPFLAGS=-I$DIR/NETCDF/include
-export LDFLAGS=-L$DIR/NETCDF/lib
-./configure --prefix=$DIR/NETCDF --disable-shared
+export LD_LIBRARY_PATH=$DIR/netcdf-c-4.9.0/lib:$LD_LIBRARY_PATH
+export CPPFLAGS=-I$DIR/netcdf-c-4.9.0/include
+export LDFLAGS=-L$DIR/netcdf-c-4.9.0/lib
+./configure --prefix=$DIR/netcdf-c-4.9.0 --disable-shared
 make
 make install
 
