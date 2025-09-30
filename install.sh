@@ -51,9 +51,9 @@ make install
 # Download and install HDF5 library 
 
 cd $WRF_HOME/Downloads
-wget -c https://github.com/HDFGroup/hdf5/releases/download/hdf5_1.14.6/hdf5-1.14.6-ubuntu-2404_gcc.tar.gz
-tar -xvzf hdf5-1.14.6-ubuntu-2024_gcc.tar.gz
-cd hdf5
+wget -c https://support.hdfgroup.org/ftp/HDF5/releases/hdf5-1.13/hdf5-1.13.2/src/hdf5-1.13.2.tar.gz
+tar -xvzf hdf5-1.13.2.tar.gz
+cd hdf5-1.13.2
 ./configure --prefix=$DIR/grib2 --with-zlib=$DIR/grib2 --enable-hl --enable-fortran
 make 
 make install
