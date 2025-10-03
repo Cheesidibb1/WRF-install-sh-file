@@ -3,7 +3,7 @@
 : '
 This shell script helps WRF users to install the Weather Research and Forecasting Model WRF version 4.5 and Ubuntu 24.04.1 LTS in a 64-bit system.
 
-Author: Pradeep Kushwaha
+Author: Pradeep Kushwaha Edited by Cheesidibb1
 ***************************************************
 PhD
 CAOS IISC
