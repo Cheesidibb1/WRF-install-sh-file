@@ -26,7 +26,7 @@ export HOME=`cd; pwd`
 mkdir -p $HOME/Models/WRF
 export WRF_HOME=$HOME/Models/WRF
 cd $WRF_HOME
-mkdir -p Downloads Libs Libs/grib2 Libs/NETCDF Libs/MPICH
+mkdir -p Downloads Libs Libs/grib2 Libs/NETCDF Libs/MPICH Libs/grib2/include
 export DIR=$WRF_HOME/Libs
 export CC=gcc
 export CXX=g++
