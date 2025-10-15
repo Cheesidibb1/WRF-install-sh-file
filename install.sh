@@ -1,193 +1,140 @@
-#!/bin/sh
+#!/bin/bash
+# ===================================================================
+# Weather Research and Forecasting Model (WRF) + WPS Build Script
+# Dependencies included for GNU-based systems (Ubuntu/CentOS)
+# Based on UCAR/MMM WRF documentation and example setups
+# -------------------------------------------------------------------
+# Author: Adapted from UCAR/MMM Forum and WRF community examples
+# License: Public domain (reference: forum.mmm.ucar.edu, jamal919 gist)
+# ===================================================================
 
-: '
-This shell script helps WRF users to install the Weather Research and Forecasting Model WRF version 4.5 and Ubuntu 24.04.1 LTS in a 64-bit system.
+set -e  # Exit on error
 
-Author: Pradeep Kushwaha Edited by Cheesidibb1
-***************************************************
-PhD
-CAOS IISC
-'
-#***********************************************************************************************************************************************
-
-# Install required libraries including HDF5, NetCDF-C, NetCDF-Fortran, Jasper, Libpng, Zlib, and MPICH
-
+# ========== BASIC SYSTEM PREP ==========
 sudo apt update
-sudo apt upgrade -y
-sudo apt install -y tcsh git libcurl4-openssl-dev
-sudo apt install -y make gcc cpp gfortran openmpi-bin libopenmpi-dev
-sudo apt install -y libtool automake autoconf make m4 default-jre default-jdk csh ksh git ncview build-essential unzip byacc flex bison
+sudo apt install -y gcc gfortran g++ m4 make perl automake autoconf libtool \
+  csh tcsh python3 unzip wget curl tar git grads default-jre
 
-#*******************************************************************************
+# ========== DIRECTORY SETUP ==========
+export HOME_DIR=$(pwd)
+export WRFDIR=$HOME_DIR/WRF_BUILD
+mkdir -p $WRFDIR/{Downloads,Libs}
+cd $WRFDIR/Downloads
 
-# Make required directories
-
-export HOME=`cd; pwd`
-mkdir -p $HOME/Models/WRF
-export WRF_HOME=$HOME/Models/WRF
-cd $WRF_HOME
-mkdir -p Downloads Libs Libs/grib2 Libs/NETCDF Libs/MPICH Libs/grib2/include
-export DIR=$WRF_HOME/Libs
+# ========== COMPILER ENVIRONMENT ==========
+export DIR=$WRFDIR/Libs
 export CC=gcc
 export CXX=g++
 export FC=gfortran
 export F77=gfortran
-export FLEX_LIB_DIR=/usr/lib/x86_64-linux-gnu/
+export FFLAGS="-m64 -fallow-argument-mismatch"
+export FCFLAGS="-m64 -fallow-argument-mismatch"
 
-#***********************************************************************************************************************************************
+# ========== DOWNLOAD DEPENDENCIES ==========
+wget -c https://www.zlib.net/zlib-1.2.13.tar.gz
+wget -c https://github.com/HDFGroup/hdf5/archive/hdf5-1_10_5.tar.gz
+wget -c https://downloads.unidata.ucar.edu/netcdf-c/4.9.0/netcdf-c-4.9.0.tar.gz
+wget -c https://downloads.unidata.ucar.edu/netcdf-fortran/4.6.0/netcdf-fortran-4.6.0.tar.gz
+wget -c https://www2.mmm.ucar.edu/wrf/OnLineTutorial/compile_tutorial/tar_files/mpich-3.0.4.tar.gz
+wget -c https://download.sourceforge.net/libpng/libpng-1.6.37.tar.gz
+wget -c https://www.ece.uvic.ca/~frodo/jasper/software/jasper-1.900.1.zip
 
-# Download and install Zlib library
+# ========== BUILD LIBRARIES ==========
 
-cd $WRF_HOME/Downloads
-curl https://www.zlib.net/fossils/zlib-1.2.13.tar.gz -o zlib-1.2.13.tar.gz
-tar -xzvf zlib-1.2.13.tar.gz
+# ZLIB
+tar -xzf zlib-1.2.13.tar.gz
 cd zlib-1.2.13
-./configure --prefix=$DIR/grib2
-make 
-make install
+./configure --prefix=$DIR
+make -j4 && make install
+cd ..
 
-#***********************************************************************************************************************************************
+# HDF5
+tar -xzf hdf5-1_10_5.tar.gz
+cd hdf5-hdf5-1_10_5
+./configure --prefix=$DIR --with-zlib=$DIR --enable-fortran --enable-hl --enable-shared
+make -j4 && make install
+cd ..
 
-# Download and install HDF5 library 
+export HDF5=$DIR
+export LD_LIBRARY_PATH=$DIR/lib:$LD_LIBRARY_PATH
 
-cd $WRF_HOME/Downloads
-curl https://support.hdfgroup.org/ftp/HDF5/releases/hdf5-1.13/hdf5-1.13.2/src/hdf5-1.13.2.tar.gz -o hdf5-1.13.2.tar.gz
-tar -xvzf hdf5-1.13.2.tar.gz
-cd hdf5-1.13.2
-./configure --prefix=$DIR/grib2 --with-zlib=$DIR/grib2 --enable-hl --enable-fortran
-make 
-make install
-export HDF5=$DIR/grib2
-export LD_LIBRARY_PATH=$DIR/grib2/lib:$LD_LIBRARY_PATH
-
-#***********************************************************************************************************************************************
-
-# Download and install NetCDF-C library
-
-cd $WRF_HOME/Downloads
-curl https://github.com/Unidata/netcdf-c/archive/refs/tags/v4.9.0.tar.gz -o netcdf-c-4.9.0.tar.gz
-tar -xzvf netcdf-c-4.9.0.tar.gz
+# NetCDF-C
+tar -xzf netcdf-c-4.9.0.tar.gz
 cd netcdf-c-4.9.0
-export CPPFLAGS=-I$DIR/grib2/include
-export LDFLAGS=-L$DIR/grib2/lib
-./configure --prefix=$DIR/netcdf-c-4.9.0 --disable-dap
-make
-make install
-export PATH=$DIR/netcdf-c-4.9.0/bin:$PATH
-export NETCDF=$DIR/netcdf-c-4.9.0
+export CPPFLAGS="-I$DIR/include"
+export LDFLAGS="-L$DIR/lib"
+./configure --prefix=$DIR --disable-dap --enable-netcdf4
+make -j4 && make install
+cd ..
 
-#***********************************************************************************************************************************************
-
-# Download and install NetCDF-Fortran library
-
-cd $WRF_HOME/Downloads
-curl https://downloads.unidata.ucar.edu/netcdf-fortran/4.6.0/netcdf-fortran-4.6.0.tar.gz -o netcdf-fortran-4.6.0.tar.gz
-tar -xvzf netcdf-fortran-4.6.0.tar.gz
+# NetCDF-Fortran
+tar -xzf netcdf-fortran-4.6.0.tar.gz
 cd netcdf-fortran-4.6.0
-export LD_LIBRARY_PATH=$DIR/netcdf-c-4.9.0/lib:$LD_LIBRARY_PATH
-export CPPFLAGS=-I$DIR/netcdf-c-4.9.0/include
-export LDFLAGS=-L$DIR/netcdf-c-4.9.0/lib
-./configure --prefix=$DIR/netcdf-c-4.9.0 --disable-shared
-make
-make install
+export CPPFLAGS="-I$DIR/include"
+export LDFLAGS="-L$DIR/lib"
+export LIBS="-lnetcdf -lhdf5_hl -lhdf5 -lz"
+./configure --prefix=$DIR --disable-shared
+make -j4 && make install
+cd ..
 
-#***********************************************************************************************************************************************
+# MPICH
+tar -xzf mpich-3.0.4.tar.gz
+cd mpich-3.0.4
+./configure --prefix=$DIR
+make -j4 && make install
+cd ..
 
-# Download and install Jasper library
+export PATH=$DIR/bin:$PATH
 
-cd $WRF_HOME/Downloads
-curl http://www.ece.uvic.ca/~mdadams/jasper/software/jasper-1.900.1.zip -o jasper-1.900.1.zip
+# LIBPNG
+tar -xzf libpng-1.6.37.tar.gz
+cd libpng-1.6.37
+./configure --prefix=$DIR
+make -j4 && make install
+cd ..
+
+# JasPer
 unzip jasper-1.900.1.zip
 cd jasper-1.900.1
 autoreconf -i
-./configure --prefix=$DIR/grib2
-make
-make install
-export JASPERLIB=$DIR/grib2/lib
-export JASPERINC=$DIR/grib2/include
+./configure --prefix=$DIR
+make -j4 && make install
+cd ..
 
-#***********************************************************************************************************************************************
+export JASPERLIB=$DIR/lib
+export JASPERINC=$DIR/include
 
-# Download and install Libpng library
-
-cd $WRF_HOME/Downloads
-curl https://sourceforge.net/projects/libpng/files/libpng16/1.6.39/libpng-1.6.39.tar.gz -o libpng-1.6.39.tar.gz
-tar -xzvf libpng-1.6.39.tar.gz
-cd libpng-1.6.39/
-export LDFLAGS=-L$DIR/grib2/lib
-export CPPFLAGS=-I$DIR/grib2/include
-./configure --prefix=$DIR/grib2
-make
-make install
-
-#***********************************************************************************************************************************************
-
-# Download and install MPICH library
-
-cd $WRF_HOME/Downloads
-curl https://www.mpich.org/static/downloads/4.0.3/mpich-4.0.3.tar.gz -o mpich-4.0.3.tar.gz
-tar -xzvf mpich-4.0.3.tar.gz
-cd mpich-4.0.3
-./configure --prefix=$DIR/MPICH --with-device=ch3 FFLAGS=-fallow-argument-mismatch FCFLAGS=-fallow-argument-mismatch
-make
-make install
-export PATH=$DIR/MPICH/bin:$PATH
-
-#***********************************************************************************************************************************************
-
-# Download and install WRF library
-
-cd $WRF_HOME/Downloads
-curl https://github.com/wrf-model/WRF/releases/download/v4.5/v4.5.tar.gz -o wrf-4.5.tar.gz
-tar -xzvf wrf-4.5.tar.gz -C $WRF_HOME
-cd $WRF_HOME/WRFV4.5
-ulimit -s unlimited
-export WRF_EM_CORE=1
-export WRF_NMM_CORE=0  
-export WRFIO_NCD_LARGE_FILE_SUPPORT=1
-
+# ========== BUILD WRF ==========
+cd $WRFDIR
+git clone --recurse-submodules https://github.com/wrf-model/WRF.git
+cd WRF
+./clean
+echo "Select option 34 (dmpar, gfortran/gcc) and 1 for nesting"
 ./configure
-# Select option 34 (dmpar GNU) for gfortran/gcc and option 1 (basic) for compile nesting
+./compile em_real -j4 >& log.compile
 
-./compile em_real 2>&1 | tee wrf_compile.log
-# Wait approximately 60 minutes to complete the installation
-
-export WRF_DIR=$WRF_HOME/WRFV4.5
-
-# Check for the existence of executable files
-
-ls -lah main/*.exe
-ls -lah run/*.exe
-ls -lah test/em_real/*.exe
-
-# #***********************************************************************************************************************************************
-
-# # Compile the WRF-Chem external emissions conversion code
-
-# ./compile emi_conv 2>&1 | tee emission_compile.log
-
-# # Check for the existence of the executable file
-# ls -lah test/em_real/*.exe
-
-#***********************************************************************************************************************************************
-
-# Download and install WPS library
-
-cd $WRF_HOME/Downloads
-curl https://github.com/wrf-model/WPS/archive/refs/tags/v4.5.tar.gz -o wps-4.5.tar.gz
-tar -xzvf wps-4.5.tar.gz -C $WRF_HOME
-cd $WRF_HOME/WPS-4.5
-
-export JASPERLIB=$DIR/grib2/lib
-export JASPERINC=$DIR/grib2/include
-
+# ========== BUILD WPS ==========
+cd $WRFDIR
+git clone https://github.com/wrf-model/WPS.git
+cd WPS
+export WRF_DIR=$WRFDIR/WRF
+echo "Select option 1 for gfortran (serial, Grib2)"
 ./configure
-# Select option 3 (Linux x86-64) gfortran (dmpar) for gfortran and distributed memory
-./compile
-export PATH=$DIR/bin:$PATH
-export LD_LIBRARY_PATH=$DIR/lib:$LD_LIBRARY_PATH
+./compile >& log.compile
 
-# Check for the existence of executable files
-ls *.exe
+# ========== ENVIRONMENT SETTINGS ==========
+echo "export NETCDF=$DIR" >> ~/.bashrc
+echo "export PATH=$DIR/bin:$PATH" >> ~/.bashrc
+echo "export LD_LIBRARY_PATH=$DIR/lib:$LD_LIBRARY_PATH" >> ~/.bashrc
+echo "export JASPERLIB=$DIR/lib" >> ~/.bashrc
+echo "export JASPERINC=$DIR/include" >> ~/.bashrc
+echo "export WRF_DIR=$WRFDIR/WRF" >> ~/.bashrc
+source ~/.bashrc
 
-#**********************************************************************************************************************************************
+# Finished
+echo "===================================================="
+echo "WRF + WPS successfully built using GNU toolchain."
+echo "Executables:"
+echo "  - WRF/main/*.exe"
+echo "  - WPS/*.exe"
+echo "===================================================="
