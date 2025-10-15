@@ -18,7 +18,7 @@ sudo apt install -y gcc gfortran g++ m4 make perl automake autoconf libtool \
 # ========== DIRECTORY SETUP ==========
 export HOME_DIR=$(pwd)
 export WRFDIR=$HOME_DIR/WRF_BUILD
-mkdir -p $WRFDIR/{Downloads,Libs}
+mkdir -p $WRFDIR/Downloads $WRFDIR/Libs
 cd $WRFDIR/Downloads
 
 # ========== COMPILER ENVIRONMENT ==========
