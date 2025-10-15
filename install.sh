@@ -1,13 +1,14 @@
 #!/usr/bin/sh
 # GNU Compilation of WRF dependencies
 DIR=$PWD/wrf_dependencies
-
+mkdir Model
 # These only need to be set again in new shell environments if using the older make build system
 export NETCDF=$DIR/netcdf
 export LD_LIBRARY_PATH=$NETCDF/lib:$DIR/grib2/lib
 
 # Set these again in any new shell environment to build and run WRF
 export PATH=$NETCDF/bin:$DIR/mpich/bin:${PATH}
+export WRF_HOME=$DIR/Model
 export JASPERLIB=$DIR/grib2/lib
 export JASPERINC=$DIR/grib2/include
 
@@ -91,5 +92,24 @@ make
 make install
 cd ..
 rm -rf jasper* ._jasper-1.900.1
-
+cd $WRF_HOME
 # After this in a new shell you should redo the environment settings found at the top of this script
+export NETCDF=$DIR/netcdf
+export LD_LIBRARY_PATH=$NETCDF/lib:$DIR/grib2/lib
+export PATH=$NETCDF/bin:$DIR/mpich/bin:${PATH}
+export JASPERLIB=$DIR/grib2/lib
+export JASPERINC=$DIR/grib2/include
+
+source .bashrc
+
+git clone --recurse-submodule https://github.com/wrf-model/WRF.git
+cd WRF
+./configure
+./compile em_real -j 4 >& log.compile
+cd $WRF_HOME
+
+git clone https://github.com/wrf-model/WPS.git
+cd WPS
+export WRF_DIR=path-to-WRF-top-level-directory/WRF
+./configure
+./compile >& log.compile
