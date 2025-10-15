@@ -106,7 +106,7 @@ git clone --recurse-submodule https://github.com/wrf-model/WRF.git
 cd WRF
 ./configure
 ./compile em_real -j 4 >& log.compile
-cd $WRF_HOME
+cd ..
 
 git clone https://github.com/wrf-model/WPS.git
 cd WPS
